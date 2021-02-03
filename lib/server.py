@@ -4,7 +4,6 @@ from flask import request, jsonify
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
-
 simple_lib = [
     {
         'id': 0,
@@ -38,6 +37,5 @@ def api_id():
 
     return jsonify(results)
 
-    
 if __name__ == "__main__":
     app.run(debug=True)
