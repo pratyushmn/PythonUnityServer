@@ -1,13 +1,10 @@
 import random
 from flask import Flask, request, jsonify
 
-app = Flask(__name__)
-app.config["DEBUG"] = True
-
 class GridWorldEnv():
     def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(2, 3), (4, 4), (7, 8)]):
-        # self.app = Flask(__name__)
-        # self.app.config["DEBUG"] = True
+        self.app = Flask(__name__)
+        self.app.config["DEBUG"] = True
 
         self.width = width
         self.height = width
@@ -16,7 +13,17 @@ class GridWorldEnv():
         self.agents = {}
         self.new_obs = set()
 
-    def step(self, agent_identifier, action):
+    @self.app.route("/s", methods=['POST'])
+    def step(self):
+        agent_identifier = request.args['id'] if 'id' in request.args else None
+
+        if not agent_identifier: return
+
+        info = request.get_json()
+        action = info.get("action", None)
+
+        if not action: return
+
         next_state = self.act(agent_identifier, action)
         reward = 0
         done = False
@@ -31,7 +38,7 @@ class GridWorldEnv():
         self.new_obs.add(agent_identifier)
         self.agents[agent_identifier] = (next_state, reward, done)
     
-    @app.route("/o", methods=['GET'])
+    @self.app.route("/o", methods=['GET'])
     def observe(self):
         if 'id' in request.args:
             agent_identifier = request.args['id']
@@ -55,14 +62,21 @@ class GridWorldEnv():
 
         return curr_state
 
+    @self.app.route("/i", methods=['POST'])
     def initialize_agent(self, agent_identifier, initial_state=None):
+        agent_identifier = request.args['id'] if 'id' in request.args else None
+
+        if not agent_identifier:
+            return
+
+        info = request.get_json()
+        initial_state = info.get("initial_state", None)
+
         if initial_state:
             self.agents[agent_identifier] = (initial_state, 0, False)
         else:
             initial_state = self.rand_point()
             self.agents[agent_identifier] = (initial_state, 0, False)
-
-        return initial_state
 
     def rand_point(self):
         x = random.randrange(0, self.width)
@@ -75,4 +89,4 @@ class GridWorldEnv():
         return (x, y)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    env = GridWorldEnv
