@@ -26,7 +26,12 @@ class GridWorldEnv():
 
                 if not action:
                     self.initialize_agent(agent_uuid)
+                    output = {}
+                    output["next_state"] = self.agents[agent_uuid][0]
+                    output["reward"] = self.agents[agent_uuid][1]
+                    output["done"] = self.agents[agent_uuid][2]
 
+                    requests.post(ENV_URL, data=output)
                 else:
                     next_state = self.act(agent_uuid, action)
                     reward = 0
