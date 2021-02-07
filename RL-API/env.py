@@ -54,18 +54,18 @@ class GridWorldEnv():
 
                     requests.post(ENV_URL, data=output)
     
-    def observe(self):
-        if 'id' in request.args:
-            agent_identifier = request.args['id']
-            if agent_identifier in self.new_obs:
-                self.new_obs.remove(agent_identifier)
-                info = {}
-                info["next_state"] = self.agents[agent_identifier][0]
-                info["reward"] = self.agents[agent_identifier][1]
-                info["done"] = self.agents[agent_identifier][2]
-                return jsonify(info)
+    # def observe(self):
+    #     if 'id' in request.args:
+    #         agent_identifier = request.args['id']
+    #         if agent_identifier in self.new_obs:
+    #             self.new_obs.remove(agent_identifier)
+    #             info = {}
+    #             info["next_state"] = self.agents[agent_identifier][0]
+    #             info["reward"] = self.agents[agent_identifier][1]
+    #             info["done"] = self.agents[agent_identifier][2]
+    #             return jsonify(info)
         
-        return None
+    #     return None
 
     def act(self, agent_identifier, action):
         curr_state = self.agents[agent_identifier][0]
