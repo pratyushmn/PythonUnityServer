@@ -94,11 +94,6 @@ class GridWorldEnv():
             y = random.randrange(0, self.height)
         
         return (x, y)
-    
-    def render(self):
-        for indx1 in range(0, self.height):
-            for index2 in range (0, self.width):
-                if (indx2, index1) == 
 
 
 
