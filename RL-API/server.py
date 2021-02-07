@@ -59,11 +59,23 @@ def configure_agents(agent_uuid):
         else: 
             return make_response(jsonify({'Message': f'Agent Not Found - {agent_uuid}'}), 404) 
 
-# Environment Routes Config
-@app.route('/environment', methods=['GET'])
-def get_all_environments():
-    return make_response(jsonify(EnvironmentDB), 200)
+@app.route('/environment', methods=['GET', 'POST'])
+def get_action(): 
+    if request.method == 'GET': 
+        if len(EnvironmentDB) > 0: 
+            response = make_response(jsonify(EnvironmentDB[0]), 200)
+            del EnvironmentDB[0]
+            tools.save_content(ENVIRONMENT_DB, EnvironmentDB)
+            return response
+        else: 
+            return make_response(jsonify({'Message': f'The Environment has not updated the state yet'}), 404) 
+              
+    elif request.method == 'POST': 
+        EnvironmentDB.append(request.get_json())
+        tools.save_content(ENVIRONMENT_DB, ENVIRONMENT_DB)
+        return make_response(jsonify(EnvironmentDB), 200)
 
+'''
 @app.route('/environment/<env_uuid>', methods=['GET', 'PUT', 'POST', 'PATCH', 'DELETE'])
 def configure_environment(env_uuid):
     env_cfg = get_environment(env_uuid)
@@ -97,6 +109,7 @@ def configure_environment(env_uuid):
             return make_response(jsonify(EnvironmentDB[env_uuid]), 200)
         else: 
             return make_response(jsonify({'Message': f'Environment Not Found - {env_uuid}'}), 404) 
+'''
 
 @app.route('/action', methods=['GET', 'POST'])
 def get_action(): 
@@ -108,7 +121,7 @@ def get_action():
             return response
         else: 
             return make_response(jsonify({'Message': f'No Action Found'}), 404) 
-              
+
     elif request.method == 'POST': 
         ActionDB.append(request.get_json())
         tools.save_content(ACTIONS_DB, ActionDB)
