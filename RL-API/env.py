@@ -30,8 +30,9 @@ class GridWorldEnv():
                     output["next_state"] = self.agents[agent_uuid][0]
                     output["reward"] = self.agents[agent_uuid][1]
                     output["done"] = self.agents[agent_uuid][2]
+                    print(output)
 
-                    requests.post(ENV_URL, data=output)
+                    requests.post(ENV_URL, json=output)
                 else:
                     next_state = self.act(agent_uuid, action)
                     reward = 0
@@ -52,7 +53,7 @@ class GridWorldEnv():
                     output["reward"] = reward
                     output["done"] = done
 
-                    requests.post(ENV_URL, data=output)
+                    requests.post(ENV_URL, json=output)
     
     # def observe(self):
     #     if 'id' in request.args:
@@ -93,6 +94,13 @@ class GridWorldEnv():
             y = random.randrange(0, self.height)
         
         return (x, y)
+    
+    def render(self):
+        for indx1 in range(0, self.height):
+            for index2 in range (0, self.width):
+                if (indx2, index1) == 
+
+
 
 if __name__ == "__main__":
     env = GridWorldEnv()
