@@ -6,9 +6,11 @@ from scripts.lib import tools
 # Local Databases (-> Move to Mongo)
 AGENT_DB = r'database\agents.yml'
 ENVIRONMENT_DB = r'database\envDB.yml'
+ACTIONS_DB = r'database\actions.yml'
 
 AgentDB = tools.get_content(AGENT_DB)
 EnvironmentDB = tools.get_content(ENVIRONMENT_DB)
+ActionDB = tools.get_content(ACTIONS_DB)
 
 # Helpers/Validators 
 get_agent = lambda agent_uuid: AgentDB.get(agent_uuid)
@@ -96,6 +98,21 @@ def configure_environment(env_uuid):
         else: 
             return make_response(jsonify({'Message': f'Environment Not Found - {env_uuid}'}), 404) 
 
+@app.route('/action', methods=['GET', 'POST'])
+def get_action(): 
+    if request.method == 'GET': 
+        if len(ActionDB) > 0: 
+            response = make_response(jsonify(ActionDB[0]), 200)
+            del ActionDB[0]
+            tools.save_content(ACTIONS_DB, ActionDB)
+            return response
+        else: 
+            return make_response(jsonify({'Message': f'No Action Found'}), 404) 
+              
+    elif request.method == 'POST': 
+        ActionDB.append(request.get_json())
+        tools.save_content(ACTIONS_DB, ActionDB)
+        return make_response(jsonify(ActionDB), 200)
 
 if __name__ == "__main__":
     app.run()
