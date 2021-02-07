@@ -1,11 +1,12 @@
 import random
 from flask import Flask, request, jsonify
+import requests
+
+ACTION_URL = 'http://127.0.0.1:5000/action'
+ENV_URL = 'http://127.0.0.1:5000/environment'
 
 class GridWorldEnv():
     def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(2, 3), (4, 4), (7, 8)]):
-        self.app = Flask(__name__)
-        self.app.config["DEBUG"] = True
-
         self.width = width
         self.height = width
         self.treasures = treasures
@@ -13,32 +14,41 @@ class GridWorldEnv():
         self.agents = {}
         self.new_obs = set()
 
-    @self.app.route("/s", methods=['POST'])
-    def step(self):
-        agent_identifier = request.args['id'] if 'id' in request.args else None
+    def run(self):
+        while True:
+            r = requests.get(ACTION_URL)
 
-        if not agent_identifier: return
+            if r:
+                agent_uuid = r.get("agent_uuid", None)
+                action = r.get("action", None)
 
-        info = request.get_json()
-        action = info.get("action", None)
+                if not agent_uuid: return
 
-        if not action: return
+                if not action:
+                    self.initialize_agent(agent_uuid)
 
-        next_state = self.act(agent_identifier, action)
-        reward = 0
-        done = False
+                else:
+                    next_state = self.act(agent_uuid, action)
+                    reward = 0
+                    done = False
 
-        if next_state in self.treasures:
-            reward = 1
-            done = True
-        elif next_state in self.pits:
-            reward = -1
-            done = True
+                    if next_state in self.treasures:
+                        reward = 1
+                        done = True
+                    elif next_state in self.pits:
+                        reward = -1
+                        done = True
 
-        self.new_obs.add(agent_identifier)
-        self.agents[agent_identifier] = (next_state, reward, done)
+                    self.new_obs.add(agent_uuid)
+                    self.agents[agent_uuid] = (next_state, reward, done)
+
+                    output = {}
+                    output["next_state"] = next_state
+                    output["reward"] = reward
+                    output["done"] = done
+
+                    requests.post(ENV_URL, data=output)
     
-    @self.app.route("/o", methods=['GET'])
     def observe(self):
         if 'id' in request.args:
             agent_identifier = request.args['id']
@@ -62,7 +72,6 @@ class GridWorldEnv():
 
         return curr_state
 
-    @self.app.route("/i", methods=['POST'])
     def initialize_agent(self, agent_identifier, initial_state=None):
         agent_identifier = request.args['id'] if 'id' in request.args else None
 
