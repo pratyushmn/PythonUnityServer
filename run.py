@@ -47,9 +47,3 @@ if __name__ == '__main__':
             action = agent.select_action(curr_state)
             curr_state, reward, done = agent.make_observation()
             print("Action: {}, Next State: {}".format(action, curr_state))
-
-
-
-
-
-
