@@ -78,14 +78,6 @@ class GridWorldEnv():
         return curr_state
 
     def initialize_agent(self, agent_identifier, initial_state=None):
-        agent_identifier = request.args['id'] if 'id' in request.args else None
-
-        if not agent_identifier:
-            return
-
-        info = request.get_json()
-        initial_state = info.get("initial_state", None)
-
         if initial_state:
             self.agents[agent_identifier] = (initial_state, 0, False)
         else:
