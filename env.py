@@ -89,4 +89,4 @@ class GridWorldEnv():
         return (x, y)
 
 if __name__ == "__main__":
-    env = GridWorldEnv
+    env = GridWorldEnv()
