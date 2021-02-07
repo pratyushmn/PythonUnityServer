@@ -12,7 +12,6 @@ def initialize(uuid_p):
         'agent_uuid': str(uuid_p)
     }
     respone = requests.post(ACTION_URL, json=payload)
-    print(respone)
 
 def get_observation(): 
     while True: 
@@ -30,7 +29,6 @@ def send_action(uuid_p, action):
         'action': action
     }
     respone = requests.post(ACTION_URL, json=payload)
-    print(respone)
 
 if __name__ == '__main__':
     num_eps = 30

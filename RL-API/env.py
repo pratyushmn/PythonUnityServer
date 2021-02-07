@@ -1,6 +1,7 @@
 import random
 from flask import Flask, request, jsonify
 import requests
+import time
 
 ACTION_URL = 'http://127.0.0.1:5000/action'
 ENV_URL = 'http://127.0.0.1:5000/environment'
@@ -21,7 +22,7 @@ class GridWorldEnv():
             if r:
                 agent_uuid = r.json().get("agent_uuid", None)
                 action = r.json().get("action", None)
-
+                print(r.json())
                 if not agent_uuid: return
 
                 if not action:
@@ -30,8 +31,6 @@ class GridWorldEnv():
                     output["next_state"] = self.agents[agent_uuid][0]
                     output["reward"] = self.agents[agent_uuid][1]
                     output["done"] = self.agents[agent_uuid][2]
-                    print(output)
-
                     requests.post(ENV_URL, json=output)
                 else:
                     next_state = self.act(agent_uuid, action)
@@ -54,6 +53,9 @@ class GridWorldEnv():
                     output["done"] = done
 
                     requests.post(ENV_URL, json=output)
+
+                self.render()
+                time.sleep(0.75)
     
     # def observe(self):
     #     if 'id' in request.args:
@@ -94,8 +96,22 @@ class GridWorldEnv():
             y = random.randrange(0, self.height)
         
         return (x, y)
-
-
+    
+    def render(self):
+        positions = {val[0]:key for key,val in self.agents.items()}
+        print('+---' * self.width + "+")
+        for y in range(0, self.height):
+            for x in range (0, self.width):
+                if (x, y) in positions:
+                    print("| " + positions[(x, y)][-1] + " ", end='')
+                elif (x, y) in self.treasures:
+                    print("| T ", end='')
+                elif (x, y) in self.pits:
+                    print("| P ", end='')
+                else:
+                    print("|   ", end='')
+            print('|\n' + '+---' * self.width + "+")
+            #print("\n")     
 
 if __name__ == "__main__":
     env = GridWorldEnv()
