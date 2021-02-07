@@ -19,8 +19,8 @@ class GridWorldEnv():
             r = requests.get(ACTION_URL)
 
             if r:
-                agent_uuid = r.get("agent_uuid", None)
-                action = r.get("action", None)
+                agent_uuid = r.json().get("agent_uuid", None)
+                action = r.json().get("action", None)
 
                 if not agent_uuid: return
 
@@ -104,3 +104,4 @@ class GridWorldEnv():
 
 if __name__ == "__main__":
     env = GridWorldEnv()
+    env.run()

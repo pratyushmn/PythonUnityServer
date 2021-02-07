@@ -60,7 +60,7 @@ def configure_agents(agent_uuid):
             return make_response(jsonify({'Message': f'Agent Not Found - {agent_uuid}'}), 404) 
 
 @app.route('/environment', methods=['GET', 'POST'])
-def get_action(): 
+def get_environment(): 
     if request.method == 'GET': 
         if len(EnvironmentDB) > 0: 
             response = make_response(jsonify(EnvironmentDB[0]), 200)
