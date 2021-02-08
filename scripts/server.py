@@ -1,16 +1,19 @@
 from flask import Flask, request, jsonify
 from flask.helpers import make_response
 from yaml.tokens import AnchorToken
-from scripts.lib import tools
+import tools, logging
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # Local Databases (-> Move to Mongo)
 AGENT_DB = r'database\agents.yml'
 ENVIRONMENT_DB = r'database\envDB.yml'
 ACTIONS_DB = r'database\actions.yml'
 
-AgentDB = tools.get_content(AGENT_DB)
-EnvironmentDB = tools.get_content(ENVIRONMENT_DB)
-ActionDB = tools.get_content(ACTIONS_DB)
+AgentDB = [] #tools.get_content(AGENT_DB)
+EnvironmentDB = [] #tools.get_content(ENVIRONMENT_DB)
+ActionDB = [] #tools.get_content(ACTIONS_DB)
 
 # Helpers/Validators 
 get_agent = lambda agent_uuid: AgentDB.get(agent_uuid)
