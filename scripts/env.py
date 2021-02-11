@@ -6,8 +6,22 @@ import time
 ACTION_URL = 'http://127.0.0.1:5000/action'
 ENV_URL = 'http://127.0.0.1:5000/environment'
 
+def get_interation():
+    while True: 
+        requestResponse = requests.get(ACTION_URL)
+        if requestResponse.status_code == 200: 
+            return requestResponse.json()
+
+def send_reaction(agent_reaction):
+    reaction = {
+        'next_state': agent_reaction['next_state'], 
+        'reward': agent_reaction['reward'], 
+        'done': agent_reaction['done']
+    }
+    requests.post(ENV_URL, json=reaction)
+
 class GridWorldEnv():
-    def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(2, 3), (4, 4), (7, 8)]):
+    def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(6, 3), (1, 5), (4, 5)]):
         self.width = width
         self.height = width
         self.treasures = treasures
@@ -16,89 +30,62 @@ class GridWorldEnv():
         self.new_obs = set()
 
     def run(self):
-        while True:
-            r = requests.get(ACTION_URL)
-
-            if r:
-                agent_uuid = r.json().get("agent_uuid", None)
-                action = r.json().get("action", None)
-                print(r.json())
-                if not agent_uuid: return
-
-                if not action:
-                    self.initialize_agent(agent_uuid)
-                    output = {}
-                    output["next_state"] = self.agents[agent_uuid][0]
-                    output["reward"] = self.agents[agent_uuid][1]
-                    output["done"] = self.agents[agent_uuid][2]
-                    requests.post(ENV_URL, json=output)
-                else:
-                    next_state = self.act(agent_uuid, action)
-                    reward = 0
-                    done = False
-
-                    if next_state in self.treasures:
-                        reward = 1
-                        done = True
-                    elif next_state in self.pits:
-                        reward = -1
-                        done = True
-
-                    self.new_obs.add(agent_uuid)
-                    self.agents[agent_uuid] = (next_state, reward, done)
-
-                    output = {}
-                    output["next_state"] = next_state
-                    output["reward"] = reward
-                    output["done"] = done
-
-                    requests.post(ENV_URL, json=output)
-
-                self.render()
-                time.sleep(0.75)
-    
-    # def observe(self):
-    #     if 'id' in request.args:
-    #         agent_identifier = request.args['id']
-    #         if agent_identifier in self.new_obs:
-    #             self.new_obs.remove(agent_identifier)
-    #             info = {}
-    #             info["next_state"] = self.agents[agent_identifier][0]
-    #             info["reward"] = self.agents[agent_identifier][1]
-    #             info["done"] = self.agents[agent_identifier][2]
-    #             return jsonify(info)
-        
-    #     return None
+        while True: 
+            interation = get_interation()
+            agent_uuid, action = interation.get('uuid'), interation.get('action')
+            if action != None:
+                self.act(agent_uuid, action)
+            else: 
+                self.initialize_agent(agent_uuid)
+            send_reaction(self.agents[agent_uuid])
 
     def act(self, agent_identifier, action):
-        curr_state = self.agents[agent_identifier][0]
+        curr_state = self.agents[agent_identifier]['next_state']
+        next_state = curr_state
 
-        if action == 0: curr_state = (min(self.width - 1, curr_state[0] + 1), curr_state[1])
-        elif action == 1: curr_state = (max(0, curr_state[0] - 1), curr_state[1])
-        elif action == 2: curr_state = (curr_state[0], min(self.height - 1, curr_state[1] + 1))
-        elif action == 3: curr_state = (curr_state[0], max(0, curr_state[1] - 1))
+        self.agents[agent_identifier]['reward'] = -0.1
+        self.agents[agent_identifier]['done'] = False
 
-        return curr_state
+        if action == 0: next_state = (min(self.width - 1, curr_state[0] + 1), curr_state[1])        #R
+        elif action == 1: next_state = (max(0, curr_state[0] - 1), curr_state[1])                   #L
+        elif action == 2: next_state = (curr_state[0], min(self.height - 1, curr_state[1] + 1))     #D
+        elif action == 3: next_state = (curr_state[0], max(0, curr_state[1] - 1))                   #U
+
+        if next_state in self.treasures: 
+            self.agents[agent_identifier]['reward'] = 5
+            self.agents[agent_identifier]['done'] = True
+        elif next_state in self.pits: 
+            self.agents[agent_identifier]['reward'] = -10
+            self.agents[agent_identifier]['done'] = True
+
+        self.agents[agent_identifier]['next_state'] = next_state
+        self.agents[agent_identifier]['prev_state'] = curr_state
+        self.new_obs.add(agent_identifier)
+        self.render(agent_identifier, action=action)
 
     def initialize_agent(self, agent_identifier, initial_state=None):
-        if initial_state:
-            self.agents[agent_identifier] = (initial_state, 0, False)
-        else:
-            initial_state = self.rand_point()
-            self.agents[agent_identifier] = (initial_state, 0, False)
+        start = initial_state if initial_state else self.rand_point()
+        self.agents[agent_identifier] = {
+            'prev_state': None,
+            'next_state': start, 
+            'reward': 0, 
+            'done': False
+        }
 
     def rand_point(self):
         x = random.randrange(0, self.width)
         y = random.randrange(0, self.height)
-
-        while (x, y) not in self.treasures and (x, y) not in self.pits:
+        while (x, y) in self.treasures or (x, y) in self.pits:
             x = random.randrange(0, self.width)
             y = random.randrange(0, self.height)
-        
         return (x, y)
     
-    def render(self):
-        positions = {val[0]:key for key,val in self.agents.items()}
+    def render(self, agent_uuid, action=None, sleep_for=0.1):
+        last_state = self.agents[agent_uuid]['prev_state']
+        next_state = self.agents[agent_uuid]['next_state']
+        reward = self.agents[agent_uuid]['reward']
+        print(f'Last State - {last_state} Action - {action} Next_State - {next_state} Reward - {reward}')
+        positions = {self.agents[agent]['next_state']:agent for agent in self.agents}
         print('+---' * self.width + "+")
         for y in range(0, self.height):
             for x in range (0, self.width):
@@ -111,7 +98,7 @@ class GridWorldEnv():
                 else:
                     print("|   ", end='')
             print('|\n' + '+---' * self.width + "+")
-            #print("\n")     
+        #time.sleep(sleep_for)
 
 if __name__ == "__main__":
     env = GridWorldEnv()
