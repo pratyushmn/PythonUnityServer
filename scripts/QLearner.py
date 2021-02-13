@@ -7,10 +7,10 @@ class QLearner():
     def __init__(self):  
         self.Q = torch.randn(4, 8, 8)   
         self.gamma = 0.99                  
-        self.learning_rate = 0.80
-        self.epsilon = 0.35
+        self.learning_rate = 0.87
+        self.epsilon = 0.45
         self.picked_actions = torch.zeros(4)
-        self.confidence = 0.9
+        self.confidence = 1.7
         self.current_episode = 0
         self.total_reward = 0
         self.uuid = uuid.uuid4()

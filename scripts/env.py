@@ -8,17 +8,11 @@ ENV_URL = 'http://127.0.0.1:5000/environment'
 
 def get_interation():
     while True: 
-        requestResponse = requests.get(ACTION_URL)
+        requestResponse = requests.get(ACTION_URL, params={'env': 'GRID WORLD'})
         if requestResponse.status_code == 200: 
             return requestResponse.json()
 
-def send_reaction(agent_reaction):
-    reaction = {
-        'next_state': agent_reaction['next_state'], 
-        'reward': agent_reaction['reward'], 
-        'done': agent_reaction['done']
-    }
-    requests.post(ENV_URL, json=reaction)
+def send_reaction(reaction): requests.post(ENV_URL, json=reaction)
 
 class GridWorldEnv():
     def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(6, 3), (1, 5), (4, 5)]):
@@ -43,7 +37,7 @@ class GridWorldEnv():
         curr_state = self.agents[agent_identifier]['next_state']
         next_state = curr_state
 
-        self.agents[agent_identifier]['reward'] = -0.1
+        self.agents[agent_identifier]['reward'] = -0.01
         self.agents[agent_identifier]['done'] = False
 
         if action == 0: next_state = (min(self.width - 1, curr_state[0] + 1), curr_state[1])        #R
@@ -52,10 +46,10 @@ class GridWorldEnv():
         elif action == 3: next_state = (curr_state[0], max(0, curr_state[1] - 1))                   #U
 
         if next_state in self.treasures: 
-            self.agents[agent_identifier]['reward'] = 5
+            self.agents[agent_identifier]['reward'] = 1
             self.agents[agent_identifier]['done'] = True
         elif next_state in self.pits: 
-            self.agents[agent_identifier]['reward'] = -10
+            self.agents[agent_identifier]['reward'] = -1
             self.agents[agent_identifier]['done'] = True
 
         self.agents[agent_identifier]['next_state'] = next_state
@@ -69,7 +63,8 @@ class GridWorldEnv():
             'prev_state': None,
             'next_state': start, 
             'reward': 0, 
-            'done': False
+            'done': False,
+            'uuid': agent_identifier
         }
 
     def rand_point(self):
@@ -84,7 +79,7 @@ class GridWorldEnv():
         last_state = self.agents[agent_uuid]['prev_state']
         next_state = self.agents[agent_uuid]['next_state']
         reward = self.agents[agent_uuid]['reward']
-        print(f'Last State - {last_state} Action - {action} Next_State - {next_state} Reward - {reward}')
+        print(f'Agent - {agent_uuid} Last State - {last_state} Action - {action} Next_State - {next_state} Reward - {reward}')
         positions = {self.agents[agent]['next_state']:agent for agent in self.agents}
         print('+---' * self.width + "+")
         for y in range(0, self.height):

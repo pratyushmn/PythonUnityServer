@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from flask.helpers import make_response
+from flask.wrappers import Response
+from werkzeug.wrappers import PlainRequest
 from yaml.tokens import AnchorToken
 import tools, logging
 
@@ -11,9 +13,9 @@ AGENT_DB = r'database\agents.yml'
 ENVIRONMENT_DB = r'database\envDB.yml'
 ACTIONS_DB = r'database\actions.yml'
 
-AgentDB = [] #tools.get_content(AGENT_DB)
-EnvironmentDB = [] #tools.get_content(ENVIRONMENT_DB)
-ActionDB = [] #tools.get_content(ACTIONS_DB)
+AgentDB = {} #tools.get_content(AGENT_DB)
+EnvironmentDB = {} #tools.get_content(ENVIRONMENT_DB)
+ActionDB = {} #tools.get_content(ACTIONS_DB)
 
 # Helpers/Validators 
 get_agent = lambda agent_uuid: AgentDB.get(agent_uuid)
@@ -65,17 +67,31 @@ def configure_agents(agent_uuid):
 @app.route('/environment', methods=['GET', 'POST'])
 def get_environment(): 
     if request.method == 'GET': 
+        request_uuid = request.args.get('uuid')
+        if request_uuid:
+            if EnvironmentDB.get(request_uuid): 
+                response = make_response(jsonify(EnvironmentDB[request_uuid]), 200)
+                del EnvironmentDB[request_uuid]
+                return response
+            else:
+                return make_response(jsonify({'Message': f'The Environment has not updated the state yet'}), 404) 
+        else:
+            return make_response(jsonify({'Message': f'Pass the UUID for the request'}), 400)  
+
+        '''
         if len(EnvironmentDB) > 0: 
             response = make_response(jsonify(EnvironmentDB[0]), 200)
             del EnvironmentDB[0]
             tools.save_content(ENVIRONMENT_DB, EnvironmentDB)
             return response
         else: 
-            return make_response(jsonify({'Message': f'The Environment has not updated the state yet'}), 404) 
-              
+            return make_response(jsonify({'Message': f'The Environment has not updated the state yet'}), 404)
+        ''' 
+
     elif request.method == 'POST': 
-        EnvironmentDB.append(request.get_json())
-        tools.save_content(ENVIRONMENT_DB, ENVIRONMENT_DB)
+        payload = request.get_json()
+        EnvironmentDB[payload['uuid']] = payload
+        #tools.save_content(ENVIRONMENT_DB, ENVIRONMENT_DB)
         return make_response(jsonify(EnvironmentDB), 200)
 
 '''
@@ -117,6 +133,18 @@ def configure_environment(env_uuid):
 @app.route('/action', methods=['GET', 'POST'])
 def get_action(): 
     if request.method == 'GET': 
+        env_name = request.args.get('env')
+        if env_name:
+            if ActionDB.get(env_name) and len(ActionDB[env_name]) > 0: 
+                response = make_response(jsonify(ActionDB[env_name][0]), 200)
+                del ActionDB[env_name][0]
+                return response
+            else:
+                return make_response(jsonify({'Message': f'No Action Found'}), 404) 
+        else:
+            return make_response(jsonify({'Message': f'Pass the environment name in the request'}), 400)  
+
+        '''
         if len(ActionDB) > 0: 
             response = make_response(jsonify(ActionDB[0]), 200)
             del ActionDB[0]
@@ -124,10 +152,13 @@ def get_action():
             return response
         else: 
             return make_response(jsonify({'Message': f'No Action Found'}), 404) 
+        '''
 
     elif request.method == 'POST': 
-        ActionDB.append(request.get_json())
-        tools.save_content(ACTIONS_DB, ActionDB)
+        payload = request.get_json()
+        if not ActionDB.get(payload['env']): ActionDB[payload['env']] = []
+        ActionDB[payload['env']].append(request.get_json())
+        #tools.save_content(ACTIONS_DB, ActionDB)
         return make_response(jsonify(ActionDB), 200)
 
 if __name__ == "__main__":
