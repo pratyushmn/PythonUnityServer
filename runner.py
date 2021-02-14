@@ -10,18 +10,18 @@ torch.manual_seed(150)
 
 def get_observation(agent_uuid): 
     while True: 
-        respone = requests.get(ENVIRONMENT_URL, params={'uuid': agent_uuid})
-        if respone.status_code == 200: 
-            responeJson = respone.json()
-            state = responeJson['next_state']
-            reward = responeJson['reward']
-            done = responeJson['done']
+        response = requests.get(ENVIRONMENT_URL, params={'uuid': agent_uuid})
+        if response.status_code == 200: 
+            responseJson = response.json()
+            state = responseJson['next_state']
+            reward = responseJson['reward']
+            done = responseJson['done']
             return state, reward, done
 
 def send_action(agent_uuid, action): 
     payload = {'uuid': str(agent_uuid), 'env': 'GRID WORLD'}
     if action != None: payload['action'] = action
-    respone = requests.post(ACTION_URL, json=payload)
+    response = requests.post(ACTION_URL, json=payload)
 
 def get_optimal(Q):
     print("\n> Optimal Policy ")

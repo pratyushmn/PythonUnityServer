@@ -18,8 +18,8 @@ class GridWorldEnv():
     def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(6, 3), (1, 5), (4, 5)]):
         self.width = width
         self.height = width
-        self.treasures = treasures
-        self.pits = pits
+        self.treasures = set(treasures)
+        self.pits = set(pits)
         self.agents = {}
         self.new_obs = set()
 
