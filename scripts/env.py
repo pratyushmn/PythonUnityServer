@@ -34,7 +34,7 @@ class GridWorldEnv():
             send_reaction(self.agents[agent_uuid])
             if self.agents[agent_uuid]['done']: del self.agents[agent_uuid]
 
-    def act(self, agent_identifier, action):
+    def act(self, agent_identifier, action, render=True):
         curr_state = self.agents[agent_identifier]['next_state']
         next_state = curr_state
 
