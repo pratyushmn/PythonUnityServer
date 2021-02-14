@@ -1,27 +1,11 @@
 from scripts.QLearner import QLearner
+from scripts.env import env
 import requests
 import torch
 
 from requests.models import Response
 
-ENVIRONMENT_URL = 'http://127.0.0.1:5000/environment' 
-ACTION_URL = 'http://127.0.0.1:5000/action'
 torch.manual_seed(150)
-
-def get_observation(agent_uuid): 
-    while True: 
-        response = requests.get(ENVIRONMENT_URL, params={'uuid': agent_uuid})
-        if response.status_code == 200: 
-            responseJson = response.json()
-            state = responseJson['next_state']
-            reward = responseJson['reward']
-            done = responseJson['done']
-            return state, reward, done
-
-def send_action(agent_uuid, action): 
-    payload = {'uuid': str(agent_uuid), 'env': 'GRID WORLD'}
-    if action != None: payload['action'] = action
-    response = requests.post(ACTION_URL, json=payload)
 
 def get_optimal(Q):
     print("\n> Optimal Policy ")
@@ -44,15 +28,15 @@ def get_optimal(Q):
 
 if __name__ == '__main__':
     agent = QLearner()
+    env = env('GRID WORLD', agent.uuid)
     num_eps = 10
     for i in range(num_eps):
-        send_action(agent.uuid, None)
-        curr_state, done, _ = get_observation(agent.uuid)
+        done = False
+        curr_state  = env.reset()
         #print(f"Start State: {curr_state}")
         while not done:
             action = agent.make_move(curr_state)
-            send_action(agent.uuid, action)
-            next_state, reward, done = get_observation(agent.uuid)
+            next_state, reward, done = env.step(action)
             curr_state = agent.update(action, curr_state, next_state, reward)
             #print("Action: {}, Next State: {} {} {}".format(action, next_state, done, i))
         print(f"Episode {i} Total R - {agent.total_reward}")
