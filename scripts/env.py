@@ -6,7 +6,7 @@ import time
 ACTION_URL = 'http://127.0.0.1:5000/action'
 ENV_URL = 'http://127.0.0.1:5000/environment'
 
-def get_interation():
+def get_interaction():
     while True: 
         requestResponse = requests.get(ACTION_URL, params={'env': 'GRID WORLD'})
         if requestResponse.status_code == 200: 
@@ -25,13 +25,14 @@ class GridWorldEnv():
 
     def run(self):
         while True: 
-            interation = get_interation()
-            agent_uuid, action = interation.get('uuid'), interation.get('action')
+            interaction = get_interaction()
+            agent_uuid, action = interaction.get('uuid'), interaction.get('action')
             if action != None:
                 self.act(agent_uuid, action)
             else: 
                 self.initialize_agent(agent_uuid)
             send_reaction(self.agents[agent_uuid])
+            if self.agents[agent_uuid]['done']: del self.agents[agent_uuid]
 
     def act(self, agent_identifier, action):
         curr_state = self.agents[agent_identifier]['next_state']

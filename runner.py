@@ -44,7 +44,7 @@ def get_optimal(Q):
 
 if __name__ == '__main__':
     agent = QLearner()
-    num_eps = 2
+    num_eps = 10
     for i in range(num_eps):
         send_action(agent.uuid, None)
         curr_state, done, _ = get_observation(agent.uuid)
