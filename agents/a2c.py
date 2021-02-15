@@ -7,6 +7,7 @@ import numpy as np
 from collections import namedtuple
 from agents.Caches.transition_cache import Transition_Cache
 from agents.Networks.fcNetwork import Network
+from functools import reduce
 
 Transition = namedtuple('Transition', 'state, action, reward, done, next_state, target')
 
@@ -18,7 +19,7 @@ class A2CAgent():
         self.name = kwargs.get("name", "")
         self.critic_weight = kwargs.get("critic_weight", 0.5)
         networkLayers = kwargs.get("layers", [30, 20, 10])
-
+        input_dims = reduce(lambda x, y: x*y, input_dims)
         # set network
         self.nn = kwargs.get('network', Network(input_dims, output_dims, lr=0.005, layers=networkLayers))
 

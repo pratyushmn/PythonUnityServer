@@ -1,11 +1,11 @@
 from scripts.QLearner import QLearner
+from agents.a2c import A2CAgent
 from scripts.env import env
 import requests
 import torch
+import uuid
 
-from requests.models import Response
-
-torch.manual_seed(150)
+torch.manual_seed(10)
 
 def get_optimal(Q):
     print("\n> Optimal Policy ")
@@ -27,18 +27,26 @@ def get_optimal(Q):
         print('|\n' + '+---' * 8 + "+")
 
 if __name__ == '__main__':
-    agent = QLearner()
-    env = env('GRID WORLD', agent.uuid)
-    num_eps = 10
+    agent_id = uuid.uuid4()
+    env = env('GRID WORLD', agent_id)
+    agent = A2CAgent(env.observation_space, env.action_space, name=agent_id)
+
+    num_eps = 1000
     for i in range(num_eps):
+        trajectory = []
+        total = 0
         done = False
         curr_state  = env.reset()
-        #print(f"Start State: {curr_state}")
+
         while not done:
-            action = agent.make_move(curr_state)
-            next_state, reward, done = env.step(action)
-            curr_state = agent.update(action, curr_state, next_state, reward)
-            #print("Action: {}, Next State: {} {} {}".format(action, next_state, done, i))
-        print(f"Episode {i} Total R - {agent.total_reward}")
-        agent.reset()
-    get_optimal(agent.Q)
+            action = agent.choose_action(curr_state)
+            next_state, reward, done = env.step(action.numpy())
+
+            total += reward
+            trajectory.append((curr_state, action, reward, next_state, done))
+
+        print(f"Episode {i} Total R: {total}")
+        agent.store_trajectory(trajectory)
+        agent.learn()
+
+    # get_optimal(agent.Q)

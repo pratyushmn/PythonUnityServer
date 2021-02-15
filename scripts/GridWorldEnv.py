@@ -2,9 +2,12 @@ import random
 from flask import Flask, request, jsonify
 import requests
 import time
+import numpy as np
+import os
 
 ACTION_URL = 'http://127.0.0.1:5000/action'
 ENV_URL = 'http://127.0.0.1:5000/environment'
+INFO_URL = 'http://127.0.0.1:5000/info'
 
 def get_interaction():
     while True: 
@@ -12,7 +15,15 @@ def get_interaction():
         if requestResponse.status_code == 200: 
             return requestResponse.json()
 
-def send_reaction(reaction): requests.post(ENV_URL, json=reaction)
+def send_reaction(reaction): 
+    reaction['next_state'] = reaction['next_state'].tolist()
+    requests.post(ENV_URL, json=reaction)
+
+def send_info(name, info):
+    json = {}
+    json['name'] = name
+    json['info'] = info
+    requests.post(INFO_URL, json=json)
 
 class GridWorldEnv():
     def __init__(self, width = 8, height = 8, treasures = [(1, 1)], pits = [(6, 3), (1, 5), (4, 5)]):
@@ -22,14 +33,21 @@ class GridWorldEnv():
         self.pits = set(pits)
         self.agents = {}
         self.new_obs = set()
-        self.toRender = False
+        self.toRender = True
+        self.action_space = 4
+        self.observation_space = (2, )
+        self.name = "GRID WORLD"
+
+        info = {'action space': self.action_space, 'observation space': self.observation_space}
+        send_info(self.name, info)
 
     def run(self):
+        print("Running")
         while True: 
             interaction = get_interaction()
             agent_uuid, action = interaction.get('uuid'), interaction.get('action')
             if action is not None:
-                self.act(agent_uuid, action)
+                self.act(agent_uuid, np.array(action))
             else: 
                 self.initialize_agent(agent_uuid)
             send_reaction(self.agents[agent_uuid])
@@ -37,15 +55,15 @@ class GridWorldEnv():
 
     def act(self, agent_identifier, action):
         curr_state = self.agents[agent_identifier]['next_state']
-        next_state = curr_state
 
         self.agents[agent_identifier]['reward'] = -0.01
         self.agents[agent_identifier]['done'] = False
 
-        if action == 0: next_state = (min(self.width - 1, curr_state[0] + 1), curr_state[1])        #R
-        elif action == 1: next_state = (max(0, curr_state[0] - 1), curr_state[1])                   #L
-        elif action == 2: next_state = (curr_state[0], min(self.height - 1, curr_state[1] + 1))     #D
-        elif action == 3: next_state = (curr_state[0], max(0, curr_state[1] - 1))                   #U
+        if action.item() == 0: next_state = (min(self.width - 1, curr_state[0] + 1), curr_state[1])        #R
+        elif action.item() == 1: next_state = (max(0, curr_state[0] - 1), curr_state[1])                   #L
+        elif action.item() == 2: next_state = (curr_state[0], min(self.height - 1, curr_state[1] + 1))     #D
+        elif action.item() == 3: next_state = (curr_state[0], max(0, curr_state[1] - 1))                   #U
+        else: next_state = curr_state
 
         if next_state in self.treasures: 
             self.agents[agent_identifier]['reward'] = 1
@@ -54,16 +72,16 @@ class GridWorldEnv():
             self.agents[agent_identifier]['reward'] = -1
             self.agents[agent_identifier]['done'] = True
 
-        self.agents[agent_identifier]['next_state'] = next_state
         self.agents[agent_identifier]['prev_state'] = curr_state
+        self.agents[agent_identifier]['next_state'] = np.array(next_state)
         self.new_obs.add(agent_identifier)
-        self.render(agent_identifier, action=action)
+        if self.toRender: self.render(agent_identifier, action=action)
 
     def initialize_agent(self, agent_identifier, initial_state=None):
         start = initial_state if initial_state else self.rand_point()
         self.agents[agent_identifier] = {
             'prev_state': None,
-            'next_state': start, 
+            'next_state':np.array(start), 
             'reward': 0, 
             'done': False,
             'uuid': agent_identifier
@@ -82,7 +100,7 @@ class GridWorldEnv():
         next_state = self.agents[agent_uuid]['next_state']
         reward = self.agents[agent_uuid]['reward']
         print(f'Agent - {agent_uuid} Last State - {last_state} Action - {action} Next_State - {next_state} Reward - {reward}')
-        positions = {self.agents[agent]['next_state']:agent for agent in self.agents}
+        positions = {tuple(self.agents[agent]['next_state']):agent for agent in self.agents}
         print('+---' * self.width + "+")
         for y in range(0, self.height):
             for x in range (0, self.width):
@@ -95,7 +113,7 @@ class GridWorldEnv():
                 else:
                     print("|   ", end='')
             print('|\n' + '+---' * self.width + "+")
-        #time.sleep(sleep_for)
+        time.sleep(sleep_for)
 
 if __name__ == "__main__":
     env = GridWorldEnv()

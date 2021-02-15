@@ -12,10 +12,12 @@ log.setLevel(logging.ERROR)
 AGENT_DB = r'database\agents.yml'
 ENVIRONMENT_DB = r'database\envDB.yml'
 ACTIONS_DB = r'database\actions.yml'
+INFO_DB = r'database\envInfo.yml'
 
 AgentDB = {} #tools.get_content(AGENT_DB)
 EnvironmentDB = {} #tools.get_content(ENVIRONMENT_DB)
 ActionDB = {} #tools.get_content(ACTIONS_DB)
+InfoDB = {}
 
 # Helpers/Validators 
 get_agent = lambda agent_uuid: AgentDB.get(agent_uuid)
@@ -160,6 +162,21 @@ def get_action():
         ActionDB[payload['env']].append(request.get_json())
         #tools.save_content(ACTIONS_DB, ActionDB)
         return make_response(jsonify(ActionDB), 200)
+
+@app.route('/info', methods=['GET', 'POST'])
+def env_info():
+    if request.method == 'GET': 
+        env_name = request.args.get('env')
+        if env_name:
+            response = InfoDB[env_name]
+            return make_response(jsonify(response), 200)
+        else:
+            return make_response(jsonify({'Message': f'Pass the environment name in the request'}), 400)  
+    
+    elif request.method == 'POST':
+        payload = request.get_json()
+        InfoDB[payload['name']] = payload['info']
+        return make_response(jsonify(payload['name']), 200)
 
 if __name__ == "__main__":
     app.run()
